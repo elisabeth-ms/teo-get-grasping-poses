@@ -1,0 +1,35 @@
+/**
+ * @brief The main, catch-all namespace for Roboticslab UC3M.
+ */
+namespace roboticslab {}
+
+/**
+ * \defgroup teo-get_grasping_poses_libraries teo-get_grasping_poses Libraries
+ *
+ * @brief teo-get_grasping_poses libraries.
+ *
+ */
+
+/**
+ * \defgroup teo-get_grasping_poses_programs teo-get_grasping_poses Programs
+ *
+ * @brief teo-get_grasping_poses programs.
+ */
+
+/**
+ * \defgroup teo-get_grasping_poses_applications teo-get_grasping_poses Applications (Collections of Programs)
+ *
+ * @brief teo-get_grasping_poses applications (collections of programs).
+ */
+
+/**
+ * \defgroup teo-get_grasping_poses_examples teo-get_grasping_poses Examples
+ *
+ * @brief teo-get_grasping_poses examples.
+ */
+
+/**
+ * \defgroup teo-get_grasping_poses_tests teo-get_grasping_poses Tests
+ *
+ * @brief teo-get_grasping_poses tests.
+ */
