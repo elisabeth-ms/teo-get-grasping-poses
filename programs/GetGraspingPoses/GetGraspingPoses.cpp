@@ -432,7 +432,7 @@ bool GetGraspingPoses::updateModule()
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr without_horizontal_surface_cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
             bool table_removed = removeHorizontalSurfaceFromPointCloud(transformed_cloud_filtered, without_horizontal_surface_cloud);
 
-            if (table_removed)
+            if (table_removed && without_horizontal_surface_cloud->points.size()>100)
             {
 
                 yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> yarpCloudWithoutHorizontalSurface;
