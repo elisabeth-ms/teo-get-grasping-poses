@@ -70,6 +70,9 @@
 #define DEFAULT_MIN_NPOINTS 100
 #define DEFAULT_MIN_POINTS_TABLE 150
 #define MAX_OBJECT_WIDTH_GRASP 0.16
+#define DEFAULT_HEAD_JOINT_POSITION -32.0
+#define DEFAULT_EPS_ANGLE_REMOVE_TABLE 0.06
+#define DEFAULT_DISTANCE_THRESHOLD_REMOVE_TABLE 0.04
 
 constexpr auto DEFAULT_ROBOT = "/teoSim"; // /teo or /teoSim
 namespace sharon
@@ -239,6 +242,9 @@ namespace sharon
 
         std::vector<ObjectSuperquadric> m_superquadric_objects;
 
+        float m_head_joint_position;
+        float m_eps_angle_remove_table;
+        float m_distance_threshold_remove_table;
     };
 
 } // namespace sharon

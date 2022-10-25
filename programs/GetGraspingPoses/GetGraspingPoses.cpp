@@ -31,7 +31,9 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     std::string strRGBDLocal = DEFAULT_RGBD_LOCAL;
     strRGBDRemote = DEFAULT_RGBD_REMOTE;
     watchdog = DEFAULT_WATCHDOG; // double
-
+    m_head_joint_position = DEFAULT_HEAD_JOINT_POSITION;
+    m_eps_angle_remove_table = DEFAULT_EPS_ANGLE_REMOVE_TABLE;
+    m_distance_threshold_remove_table = DEFAULT_DISTANCE_THRESHOLD_REMOVE_TABLE;
     robot = rf.check("robot", yarp::os::Value(DEFAULT_ROBOT), "name of /robot to be used").asString();
 
     m_update_data = true;
@@ -40,6 +42,13 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     printf("\t--RGBDDevice (device we create, default: \"%s\")\n", strRGBDDevice.c_str());
     printf("\t--RGBDLocal (if accesing remote, local port name, default: \"%s\")\n", strRGBDLocal.c_str());
     printf("\t--RGBDRemote (if accesing remote, remote port name, default: \"%s\")\n", strRGBDRemote.c_str());
+    printf("\t--HeadJointPosition (default: \"%f\")\n", m_head_joint_position);
+    printf("\t--EPSAngle (default: \"%f\")\n", m_eps_angle_remove_table);
+    printf("\t--Distance threshold (default: \"%f\")\n", m_distance_threshold_remove_table);
+
+    
+    
+
     printf("\t--watchdog ([s] default: \"%f\")\n", watchdog);
 
     if (rf.check("RGBDDevice"))
@@ -50,10 +59,19 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
         strRGBDRemote = rf.find("RGBDRemote").asString();
     if (rf.check("watchdog"))
         watchdog = rf.find("watchdog").asFloat64();
+    if (rf.check("HeadJointPosition"))
+        m_head_joint_position = rf.find("HeadJointPosition").asFloat64();
+    if (rf.check("EPSAngle"))
+        m_eps_angle_remove_table = rf.find("EPSAngle").asFloat64();
+    if (rf.check("DistanceThreshold"))
+        m_distance_threshold_remove_table = rf.find("DistanceThreshold").asFloat64();
 
-    printf("RgbdDetection using RGBDDevice: %s, RGBDLocal: %s, RGBDRemote: %s.\n",
+    printf("GetGraspingPoses using RGBDDevice: %s, RGBDLocal: %s, RGBDRemote: %s.\n",
            strRGBDDevice.c_str(), strRGBDLocal.c_str(), strRGBDRemote.c_str());
-    printf("RgbdDetection using watchdog: %f.\n", watchdog);
+    printf("GetGraspingPoses using watchdog: %f.\n", watchdog);
+    printf("GetGraspingPoses using HeadJointPosition: %f.\n", m_head_joint_position);
+    printf("GetGraspingPoses using EPSAngle: %f.\n", m_eps_angle_remove_table);
+    printf("GetGraspingPoses using distance threshold: %f.\n", m_distance_threshold_remove_table);
 
     yarp::os::Property options;
     options.fromString(rf.toString());    //-- Should get noMirror, noRGBMirror, noDepthMirror, video modes...
@@ -140,8 +158,8 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
             }
             else
             {
-                qrMin.addFloat64(-28);
-                qrMax.addFloat64(28.0);
+                qrMin.addFloat64(-60.0);
+                qrMax.addFloat64(60.0);
             }
         }
     }
@@ -316,13 +334,13 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     int print_level_superq = rf.check("print_level_superq", yarp::os::Value(0)).asInt32();
     object_class = rf.check("object_class", yarp::os::Value("default")).toString();
     single_superq = rf.check("single_superq", yarp::os::Value(true)).asBool();
-    sq_model_params["tol"] = rf.check("tol_superq", yarp::os::Value(1e-6)).asFloat64();
-    sq_model_params["optimizer_points"] = rf.check("optimizer_points", yarp::os::Value(200)).asInt32();
-    sq_model_params["random_sampling"] = rf.check("random_sampling", yarp::os::Value(false)).asBool();
+    sq_model_params["tol"] = rf.check("tol_superq", yarp::os::Value(1e-4)).asFloat64();
+    sq_model_params["optimizer_points"] = rf.check("optimizer_points", yarp::os::Value(300)).asInt32();
+    sq_model_params["random_sampling"] = rf.check("random_sampling", yarp::os::Value(true)).asBool();
     sq_model_params["max_iter"] = rf.check("max_iter", yarp::os::Value(10000000)).asInt32();
     sq_model_params["merge_model"] = rf.check("merge_model", yarp::os::Value(true)).asBool();
     sq_model_params["minimum_points"] = rf.check("minimum_points", yarp::os::Value(200)).asInt32();
-    sq_model_params["fraction_pc"] = rf.check("fraction_pc", yarp::os::Value(2)).asInt32();
+    sq_model_params["fraction_pc"] = rf.check("fraction_pc", yarp::os::Value(4)).asInt32();
     sq_model_params["threshold_axis"] = rf.check("tol_threshold_axissuperq", yarp::os::Value(0.7)).asFloat64();
     sq_model_params["threshold_section1"] = rf.check("threshold_section1", yarp::os::Value(0.6)).asFloat64();
     sq_model_params["threshold_section2"] = rf.check("threshold_section2", yarp::os::Value(0.03)).asFloat64();
@@ -593,7 +611,7 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
         if (strRGBDRemote == "/realsense2")
         {
             currentHeadQ[0] = 0.0;
-            currentHeadQ[1] = -0.0;
+            currentHeadQ[1] = m_head_joint_position;
         }
         else
         {
@@ -655,7 +673,9 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
         else if (strRGBDRemote == "/realsense2")
         {
             std::cout << "/realsense2" << std::endl;
-            frame = frame_head_trunk;
+            KDL::Frame frame_camera_head;
+            // frame_camera_head = frame_camera_head*KDL::Frame(KDL::Vector(0.0,0.0,0.0));
+            frame = frame_head_trunk*frame_camera_head;
         }
     }
     else if (DEFAULT_ROBOT == "/teoSim")
@@ -791,9 +811,9 @@ bool GetGraspingPoses::removeHorizontalSurfaceFromPointCloud(const pcl::PointClo
     seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setMaxIterations(2000);
-    seg.setDistanceThreshold(0.02);
+    seg.setDistanceThreshold(m_distance_threshold_remove_table);
     seg.setAxis(Eigen::Vector3f::UnitX());
-    seg.setEpsAngle(0.01);
+    seg.setEpsAngle(m_eps_angle_remove_table);
 
     seg.setInputCloud(wholePointCloud);
     seg.segment(*inliers, *coefficients);
@@ -1304,7 +1324,7 @@ void GetGraspingPoses::computeGraspingPoses(const std::vector<SuperqModel::Super
             zobject = KDL::Vector(xaxes, 0, 0);
             for (float y = -params[1] / 2.0; y <= params[1] / 2.0; y += step)
             {
-                for (float yaxes = -1.0; yaxes <= 1.0; yaxes += 2)
+                for (float yaxes = -1.0; yaxes <= -1.0; yaxes += 2)
                 {
                     yobject = KDL::Vector(0, yaxes, 0.0);
                     xobject = yobject * zobject;
