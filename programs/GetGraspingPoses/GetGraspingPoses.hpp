@@ -47,18 +47,20 @@
 #include <pcl/recognition/cg/hough_3d.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
-#include <pcl/visualization/cloud_viewer.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/boost.h>
+// #include <pcl/visualization/cloud_viewer.h>
+// #include <pcl/visualization/pcl_visualizer.h>
+// #include <pcl/visualization/boost.h>
 #include <pcl/segmentation/extract_labeled_clusters.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/surface/mls.h>
 #include <pcl/surface/convex_hull.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 // SuperquadricLib
 #include <SuperquadricLibModel/superquadricEstimator.h>
 #include <yarp/math/Math.h>
+#include <deque>
 
 #define DEFAULT_CROP_SELECTOR 0 // 1=true
 #define DEFAULT_RGBD_DEVICE "RGBDSensorClient"
@@ -73,7 +75,7 @@
 #define DEFAULT_HEAD_JOINT_POSITION -32.0
 #define DEFAULT_EPS_ANGLE_REMOVE_TABLE 0.06
 #define DEFAULT_DISTANCE_THRESHOLD_REMOVE_TABLE 0.04
-
+#define DEFAULT_TABLE_HEIGHT_WRT_TRUNK 0.1
 constexpr auto DEFAULT_ROBOT = "/teoSim"; // /teo or /teoSim
 namespace sharon
 {
@@ -199,14 +201,15 @@ namespace sharon
 
 
         void updateDetectedObjectsPointCloud(const pcl::PointCloud<pcl::PointXYZL>::Ptr &lccp_labeled_cloud);
-        bool PclPointCloudToSuperqPointCloud(const pcl::PointCloud<pcl::PointXYZRGBA> &object_cloud, SuperqModel::PointCloud &point_cloud);
-        void GetSuperquadricFromPointCloud(SuperqModel::PointCloud point_cloud,std::vector<SuperqModel::Superquadric> &superqs);
+        SuperqModel::PointCloud PclPointCloudToSuperqPointCloud(const pcl::PointCloud<pcl::PointXYZRGBA> &object_cloud);
+        std::vector<SuperqModel::Superquadric> GetSuperquadricFromPointCloud(SuperqModel::PointCloud & point_cloud);
         void createPointCloudFromSuperquadric(const std::vector<SuperqModel::Superquadric> &superqs, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloudSuperquadric, int indexDetectedObjects);
         void createGraspingPosesFromSuperquadric(const std::vector<SuperqModel::Superquadric> &superqs);
         bool createBoundingBox2DFromSuperquadric(const std::vector<SuperqModel::Superquadric> &superqs, std::array<int, 4> &bbox);
         void computeGraspingPoses(const std::vector<SuperqModel::Superquadric> &superqs, std::vector<std::vector<double>> &graspingPoses);
         void rosSendGraspingPoses(const std::string &frame_id, const std::vector<std::vector<double>> &graspingPoses);
-        
+        bool updateSuperquadricsObjects();
+
         void rosComputeGraspingPosesArrowAndSend(const std::string &frame_id, std::vector<pcl::PointXYZRGBA> &centroids, std::vector<KDL::Vector> &xaxis, std::vector<KDL::Vector> &yaxis, std::vector<KDL::Vector> &normals);
         double watchdog;
 

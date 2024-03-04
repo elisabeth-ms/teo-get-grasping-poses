@@ -10,7 +10,10 @@ find_package(YARP 3.3 REQUIRED COMPONENTS os dev)
 find_package(orocos_kdl 1.4)
 find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
 find_package(SuperquadricLib 0.1.0.0 EXACT REQUIRED)
-
+find_package(Eigen3 QUIET CONFIG)
+if(NOT EIGEN3_FOUND)
+    find_package(Eigen3 REQUIRED)
+endif()
 # Retrieve a list of targets defined elsewhere.
 get_property(_exported_targets GLOBAL PROPERTY TEO_SHARON_TARGETS)
 if(!PCL_FOUND)
