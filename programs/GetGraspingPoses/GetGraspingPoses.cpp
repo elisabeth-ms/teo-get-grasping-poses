@@ -382,6 +382,24 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
     m_update_data = false;
     yarp::sig::ImageOf<yarp::sig::PixelFloat> depthFrame;
 
+    // lets get the depth image and try several times
+    // int attempts = 0;
+    // bool depth_ok = false;
+    // while (attempts < 5)
+    // {
+    //   depth_ok = iRGBDSensor->getDepthImage(depthFrame);
+    //   if (depth_ok == false)
+    //   {
+    //     yError() << "getDepthImage failed";
+
+    //     attempts++;
+    //   }
+    // }
+    // if (depth_ok == false)
+    // {
+    //   yError() << "getDepthImage failed";
+    //   return false;
+    // }
     bool depth_ok = iRGBDSensor->getDepthImage(depthFrame);
     if (depth_ok == false)
     {
@@ -527,6 +545,10 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
             std::vector<SuperqModel::Superquadric> superqs = GetSuperquadricFromPointCloud(point_cloud);
             yInfo() << "create";
 
+            
+            // vis.addSuperq(superqs);
+
+
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr auxCloudSuperquadric(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
             // createPointCloudFromSuperquadric(superqs, auxCloudSuperquadric, idx);
@@ -543,6 +565,7 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
             m_superquadric_objects.push_back(object_superquadric);
             // computeGraspingPoses(superqs, graspingPoses);
           }
+          // vis.visualize();
           // yarp::pcl::fromPCL<pcl::PointXYZRGBA, yarp::sig::DataXYZRGBA>(*cloudSuperquadric, yarpCloudSuperquadric);
           // yInfo() << yarpCloudSuperquadric.size();
           // rosComputeAndSendPc(yarpCloudSuperquadric, "waist", *pointCloudFillingObjectsTopic);
@@ -555,7 +578,7 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
 
 bool GetGraspingPoses::updateModule()
 {
-  printf("GetGraspingPoses alive...\n");
+  // printf("GetGraspingPoses alive...\n");
 
   return true;
 }
@@ -2420,9 +2443,12 @@ bool GetGraspingPoses::read(yarp::os::ConnectionReader &connection)
   }
   case VOCAB_CMD_GET_SUPERQUADRICS:
   {
+
     yInfo() << "Getting superquadrics";
+    // VTK visualizer
     for (int i = 0; i < m_superquadric_objects.size(); i++)
     {
+
       auto params = m_superquadric_objects[i].superqs[0].getSuperqParams();
       yarp::os::Property bboxDict;
       bboxDict.put("label_idx", m_superquadric_objects[i].label);
@@ -2439,6 +2465,7 @@ bool GetGraspingPoses::read(yarp::os::ConnectionReader &connection)
       bboxDict.put("yaw", yarp::os::Value(params[10]));
       reply.addDict() = bboxDict;
     }
+
     return reply.write(*writer);
   }
   case VOCAB_CMD_REMOVE_SUPERQUADRIC:

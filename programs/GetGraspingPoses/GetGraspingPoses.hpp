@@ -61,6 +61,8 @@
 #include <SuperquadricLibModel/superquadricEstimator.h>
 #include <yarp/math/Math.h>
 #include <deque>
+#include <SuperquadricLibVis/visRenderer.h>
+
 
 #define DEFAULT_CROP_SELECTOR 0 // 1=true
 #define DEFAULT_RGBD_DEVICE "RGBDSensorClient"
@@ -76,6 +78,7 @@
 #define DEFAULT_EPS_ANGLE_REMOVE_TABLE 0.06
 #define DEFAULT_DISTANCE_THRESHOLD_REMOVE_TABLE 0.04
 #define DEFAULT_TABLE_HEIGHT_WRT_TRUNK 0.1
+
 constexpr auto DEFAULT_ROBOT = "/teoSim"; // /teo or /teoSim
 namespace sharon
 {
@@ -248,6 +251,7 @@ namespace sharon
         float m_head_joint_position;
         float m_eps_angle_remove_table;
         float m_distance_threshold_remove_table;
+
     };
 
 } // namespace sharon

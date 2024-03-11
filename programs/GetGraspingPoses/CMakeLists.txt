@@ -52,6 +52,7 @@ target_link_libraries(${KEYWORD} YARP::YARP_OS
                                  ${OpenCV_LIBRARIES}
                                  ${PCL_LIBRARIES}
                                  SuperquadricLib::SuperquadricLibModel
+                                 SuperquadricLib::SuperquadricLibVis
                                  ${_exported_targets})
 
 target_include_directories(${KEYWORD} PRIVATE ${orocos_kdl_INCLUDE_DIRS})                                 
