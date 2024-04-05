@@ -149,7 +149,7 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
 
     for (unsigned int joint = 0; joint < 2; joint++)
     {
-      if (strRGBDRemote == "/realsense2")
+      if (strRGBDRemote == "/teo/realsense2")
       {
         qrMin.addFloat64(-60);
         qrMax.addFloat64(60.0);
@@ -164,7 +164,7 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
   yarp::os::Property trunkAndHeadSolverOptions;
   rf.setDefaultContext("kinematics"); // context to find kinematic config files
   std::string trunkHeadKinPath = rf.findFileByName("teo-trunk-head.ini");
-  if (strRGBDRemote == "/realsense2")
+  if (strRGBDRemote == "/teo/realsense2")
   {
     std::cout << "Using teo-trunk-realsense-tripode.ini" << std::endl;
     trunkHeadKinPath = rf.findFileByName("teo-trunk-realsense-tripode.ini");
@@ -235,7 +235,7 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     return false;
   }
 
-  if (strRGBDRemote == "/realsense2")
+  if (strRGBDRemote == "/teo/realsense2")
   {
     // Realsense camera aligns depth frame and color frame, so we need to use the intrinic
     // params for the color. Then, these params are used for computing the pointcloud.
@@ -248,30 +248,33 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
 
   yInfo() << "colorIntrinsicParams: " << colorIntrinsicParams.toString();
   yInfo() << "depthIntrinsicParams: " << depthIntrinsicParams.toString();
+  rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
+  rosNode = std::make_shared<rclcpp::Node>("get_grasping_poses_node");
 
-  rosNode = new yarp::os::Node(DEFAULT_PREFIX);
+  pointCloud_outTopic = rosNode->create_publisher<sensor_msgs::msg::PointCloud2>("/depthToPointCloud", 10);
+  pointCloudLccpTopic = rosNode->create_publisher<sensor_msgs::msg::PointCloud2>("/PointCloudLccp", 10);
+  pointCloudFillingObjectsTopic = rosNode->create_publisher<sensor_msgs::msg::PointCloud2>("/pointCloudFillingObjects", 10);
+  graspingPoses_outTopic = rosNode->create_publisher<visualization_msgs::msg::MarkerArray>("/graspingPoses", 10);
+  bbox3d_outTopic = rosNode->create_publisher<visualization_msgs::msg::MarkerArray>("/bbox3d", 10);
+  // if (pointCloud_outTopic->topic("/depthToPointCloud") == false)
+  // {
+  //   yError("Error opening depthToPointCloud topic.\n");
+  // }
+  // else
+  // {
+  //   yInfo("Opening depthToPointCloud topic succesfully.\n");
+  // }
 
-  pointCloud_outTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
+  // pointCloudFillingObjectsTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
 
-  if (pointCloud_outTopic->topic("/depthToPointCloud") == false)
-  {
-    yError("Error opening depthToPointCloud topic.\n");
-  }
-  else
-  {
-    yInfo("Opening depthToPointCloud topic succesfully.\n");
-  }
-
-  pointCloudFillingObjectsTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
-
-  if (pointCloudFillingObjectsTopic->topic("/pointCloudFillingObjects") == false)
-  {
-    yError("Error opening pointCloudFillingObjects topic.\n");
-  }
-  else
-  {
-    yInfo("Opening pointCloudFillingObjects topic succesfully.\n");
-  }
+  // if (pointCloudFillingObjectsTopic->topic("/pointCloudFillingObjects") == false)
+  // {
+  //   yError("Error opening pointCloudFillingObjects topic.\n");
+  // }
+  // else
+  // {
+  //   yInfo("Opening pointCloudFillingObjects topic succesfully.\n");
+  // }
 
   pointCloudWithoutPlannarSurfaceTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
 
@@ -284,16 +287,16 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     yInfo("Opening PointCloudWithoutPlannarSurface topic succesfully.\n");
   }
 
-  pointCloudLccpTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
+  // pointCloudLccpTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
 
-  if (pointCloudLccpTopic->topic("/PointCloudLccp") == false)
-  {
-    yError("Error opening PointCloudLccp topic.\n");
-  }
-  else
-  {
-    yInfo("Opening PointCloudLccp topic succesfully.\n");
-  }
+  // if (pointCloudLccpTopic->topic("/PointCloudLccp") == false)
+  // {
+  //   yError("Error opening PointCloudLccp topic.\n");
+  // }
+  // else
+  // {
+  //   yInfo("Opening PointCloudLccp topic succesfully.\n");
+  // }
 
   pointCloud_objectTopic = new yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2>;
 
@@ -306,26 +309,26 @@ bool GetGraspingPoses::configure(yarp::os::ResourceFinder &rf)
     yInfo("Opening pointCloudObject topic succesfully.\n");
   }
 
-  graspingPoses_outTopic = new yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>;
+  // graspingPoses_outTopic = new yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>;
 
-  if (graspingPoses_outTopic->topic("/graspingPoses") == false)
-  {
-    yError("Error opening graspingPoses topic.\n");
-  }
-  else
-  {
-    yInfo("Opening graspingPoses topic succesfully.\n");
-  }
+  // if (graspingPoses_outTopic->topic("/graspingPoses") == false)
+  // {
+  //   yError("Error opening graspingPoses topic.\n");
+  // }
+  // else
+  // {
+  //   yInfo("Opening graspingPoses topic succesfully.\n");
+  // }
 
-  bbox3d_topic = new yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>;
-  if (bbox3d_topic->topic("/bbox3d") == false)
-  {
-    yError("Error opening bbox3d topic.\n");
-  }
-  else
-  {
-    yInfo("Opening bbox3d topic succesfully.\n");
-  }
+  // bbox3d_topic = new yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>;
+  // if (bbox3d_topic->topic("/bbox3d") == false)
+  // {
+  //   yError("Error opening bbox3d topic.\n");
+  // }
+  // else
+  // {
+  //   yInfo("Opening bbox3d topic succesfully.\n");
+  // }
 
   /* ------ Set Superquadric Model parameters ------ */
 
@@ -413,6 +416,48 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
       yError() << "getRgbImage failed";
       return false;
     }
+    yarp::os::Stamp colorStamp;
+    yarp::os::Stamp depthStamp;
+    if (!iRGBDSensor->getImages(rgbImage, depthFrame, &colorStamp, &depthStamp))
+    {
+      yError() << "getImages failed";
+      return false;
+    }
+
+    static yarp::os::Stamp oldColorStamp = yarp::os::Stamp(0, 0);
+    static yarp::os::Stamp oldDepthStamp = yarp::os::Stamp(0, 0);
+    yarp::os::Property propIntrinsic;
+    bool rgb_data_ok = true;
+    bool depth_data_ok = true;
+    bool intrinsic_ok = false;
+
+    if ((colorStamp.getTime() - oldColorStamp.getTime()) <= 0)
+    {
+      rgb_data_ok = false;
+    }
+    else
+    {
+      oldColorStamp = colorStamp;
+    }
+
+    if ((depthStamp.getTime() - oldDepthStamp.getTime()) <= 0)
+    {
+      depth_data_ok = false;
+    }
+    else
+    {
+      oldDepthStamp = depthStamp;
+    }
+    // intrinsic_ok = iRGBDSensor->getRgbIntrinsicParam(propIntrinsic);
+
+    // yarp::sig::IntrinsicParams intrinsics(propIntrinsic);
+    yarp::sig::ImageOf<yarp::sig::PixelRgb> colorImagePixelRGB;
+    colorImagePixelRGB.setExternal(rgbImage.getRawImage(), rgbImage.width(), rgbImage.height());
+    // create point cloud in yarp format
+    // yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> pcFiltered = yarp::sig::utils::depthRgbToPC<yarp::sig::DataXYZRGBA, yarp::sig::PixelRgb>(depthFrame,
+    // colorImagePixelRGB,
+    // intrinsics,
+    // yarp::sig::utils::OrganizationType::Unorganized);
     yarp::sig::ImageOf<yarp::sig::PixelRgb> colorFrame;
     colorFrame.copy(rgbImage);
 
@@ -456,7 +501,7 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
       yarp::pcl::fromPCL<pcl::PointXYZRGBA, yarp::sig::DataXYZRGBA>(*transformed_cloud, yarpCloud);
 
       // yInfo()<<"Point cloud transformed";
-      rosComputeAndSendPc(yarpCloud, "waist", *pointCloud_outTopic);
+      rosComputeAndSendPc(yarpCloud, "waist", pointCloud_outTopic);
 
       pcl::VoxelGrid<pcl::PointXYZRGBA> sor;
       sor.setInputCloud(transformed_cloud);
@@ -472,7 +517,7 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
         yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> yarpCloudWithoutHorizontalSurface;
         yarp::pcl::fromPCL<pcl::PointXYZRGBA, yarp::sig::DataXYZRGBA>(*without_horizontal_surface_cloud, yarpCloudWithoutHorizontalSurface);
 
-        rosComputeAndSendPc(yarpCloudWithoutHorizontalSurface, "waist", *pointCloudWithoutPlannarSurfaceTopic);
+        // rosComputeAndSendPc(yarpCloudWithoutHorizontalSurface, "waist", *pointCloudWithoutPlannarSurfaceTopic);
 
         pcl::PointCloud<pcl::PointXYZL>::Ptr lccp_labeled_cloud(new pcl::PointCloud<pcl::PointXYZL>);
         // supervoxelOversegmentation(without_horizontal_surface_cloud, lccp_labeled_cloud);
@@ -522,7 +567,7 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
 
         yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> yarpCloudLccp;
         yarp::pcl::fromPCL<pcl::PointXYZL, yarp::sig::DataXYZRGBA>(*lccp_labeled_cloud, yarpCloudLccp);
-        rosComputeAndSendPc(yarpCloudLccp, "waist", *pointCloudLccpTopic);
+        rosComputeAndSendPc(yarpCloudLccp, "waist", pointCloudLccpTopic);
 
         pcl::PointCloud<pcl::PointXYZRGBA>::Ptr lccp_colored_cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
@@ -545,14 +590,12 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
             std::vector<SuperqModel::Superquadric> superqs = GetSuperquadricFromPointCloud(point_cloud);
             yInfo() << "create";
 
-            
             // vis.addSuperq(superqs);
-
 
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr auxCloudSuperquadric(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-            // createPointCloudFromSuperquadric(superqs, auxCloudSuperquadric, idx);
-            // *cloudSuperquadric += *auxCloudSuperquadric;
+            createPointCloudFromSuperquadric(superqs, auxCloudSuperquadric, idx);
+            *cloudSuperquadric += *auxCloudSuperquadric;
 
             ObjectSuperquadric object_superquadric;
             object_superquadric.label = detected_objects[idx].label;
@@ -566,9 +609,9 @@ bool GetGraspingPoses::updateSuperquadricsObjects()
             // computeGraspingPoses(superqs, graspingPoses);
           }
           // vis.visualize();
-          // yarp::pcl::fromPCL<pcl::PointXYZRGBA, yarp::sig::DataXYZRGBA>(*cloudSuperquadric, yarpCloudSuperquadric);
+          yarp::pcl::fromPCL<pcl::PointXYZRGBA, yarp::sig::DataXYZRGBA>(*cloudSuperquadric, yarpCloudSuperquadric);
           // yInfo() << yarpCloudSuperquadric.size();
-          // rosComputeAndSendPc(yarpCloudSuperquadric, "waist", *pointCloudFillingObjectsTopic);
+          rosComputeAndSendPc(yarpCloudSuperquadric, "waist", pointCloudFillingObjectsTopic);
         }
       }
     }
@@ -683,7 +726,7 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
   }
   else
   {
-    if (strRGBDRemote == "/realsense2")
+    if (strRGBDRemote == "/teo/realsense2")
     {
       currentHeadQ[0] = 0.0;
       currentHeadQ[1] = m_head_joint_position;
@@ -706,7 +749,7 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
 
   if (!iTrunkEncoders->getEncoders(currentTrunkQ.data()))
   {
-    yError() << "getEncoders() failed";
+    yError() << "iTunkEncoders getEncoders() failed";
     return false;
   }
   yInfo() << "CurrentTrunkQ: " << currentTrunkQ[0] << " " << currentTrunkQ[1];
@@ -720,7 +763,7 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
   }
   for (int i = 0; i < numHeadJoints; i++)
   {
-    currentQ[i + 2] = -currentHeadQ[i];
+    currentQ[i + 2] = - currentHeadQ[i];
   }
 
   std::vector<double> currentX;
@@ -729,11 +772,12 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
     yError() << "fwdKin failed";
     return false;
   }
-
+  yInfo() << "currentQ: " << currentQ[0] << " " << currentQ[1] << " " << currentQ[2] << " " << currentQ[3];
+  yInfo() << "currentX: " << currentX[0] << " " << currentX[1] << " " << currentX[2] << " " << currentX[3] << " " << currentX[4] << " " << currentX[5] << " " << currentX[6];
   KDL::Frame frame_head_trunk = roboticslab::KdlVectorConverter::vectorToFrame(currentX);
   KDL::Frame frame;
 
-  if (DEFAULT_ROBOT == "/teo")
+  if (robot == "/teo")
   {
     if (strRGBDRemote == "/xtion")
     {
@@ -745,15 +789,17 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
       frame_camera_head = frame_camera_head * KDL::Frame(KDL::Vector(0.0, /*-0.018*/ -0.026, 0.0));
       frame = frame_head_trunk * frame_camera_head;
     }
-    else if (strRGBDRemote == "/realsense2")
+    else if (strRGBDRemote == "/teo/realsense2")
     {
       std::cout << "/realsense2" << std::endl;
       KDL::Frame frame_camera_head;
       // frame_camera_head = frame_camera_head*KDL::Frame(KDL::Vector(0.0,0.0,0.0));
+      frame_camera_head = frame_camera_head * KDL::Frame(KDL::Vector(0.0, 0.0175+0.015, 0.0));
       frame = frame_head_trunk * frame_camera_head;
+
     }
   }
-  else if (DEFAULT_ROBOT == "/teoSim")
+  else if (robot == "/teoSim")
   {
     frame = frame_head_trunk;
   }
@@ -761,6 +807,8 @@ bool GetGraspingPoses::getTransformMatrix(const bool &from_camera_to_trunk, Eige
   if (!from_camera_to_trunk)
     frame = frame.Inverse();
 
+  yInfo()<<"From camera to trunk: "<<from_camera_to_trunk;
+  yInfo()<<"Frame Pos: "<<frame.p.x()<<" "<<frame.p.y()<<" "<<frame.p.z();
   transform = KDLToEigenMatrix(frame);
 
   return true;
@@ -811,65 +859,101 @@ Eigen::Matrix4f GetGraspingPoses::KDLToEigenMatrix(const KDL::Frame &p)
   return b;
 }
 /************************************************************************/
-void GetGraspingPoses::rosComputeAndSendPc(const yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> &pc, std::string frame_id, const yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> &PointCloudTopic)
+void GetGraspingPoses::rosComputeAndSendPc(const yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> &yarpCloud, std::string frame_id, rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr PointCloudTopic)
 {
-  yInfo() << "Compute and send pointcloud in ROS topic: " << PointCloudTopic.getName();
-  yarp::rosmsg::sensor_msgs::PointCloud2 rosPC_data;
-  static int counter = 0;
-  rosPC_data.header.stamp.nsec = 0;
-  rosPC_data.header.stamp.sec = 0;
-  rosPC_data.header.seq = counter++;
-  rosPC_data.header.frame_id = frame_id;
+  sensor_msgs::msg::PointCloud2 pc2Ros;
 
-  rosPC_data.fields.resize(4);
-  rosPC_data.fields[0].name = "x";
-  rosPC_data.fields[0].offset = 0;   // offset in bytes from start of each point
-  rosPC_data.fields[0].datatype = 7; // 7 = FLOAT32
-  rosPC_data.fields[0].count = 1;    // how many FLOAT32 used for 'x'
+  pc2Ros.header.frame_id = frame_id;
+  pc2Ros.header.stamp = rclcpp::Clock().now();
 
-  rosPC_data.fields[1].name = "y";
-  rosPC_data.fields[1].offset = 4;   // offset in bytes from start of each point
-  rosPC_data.fields[1].datatype = 7; // 7 = FLOAT32
-  rosPC_data.fields[1].count = 1;    // how many FLOAT32 used for 'y'
+  // filling ros point field
+  pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
+  pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
+  pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
+  pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
+  pc2Ros.fields[0].name = "x";
+  pc2Ros.fields[0].offset = 0;
+  pc2Ros.fields[0].datatype = 7;
+  pc2Ros.fields[0].count = 1;
+  pc2Ros.fields[1].name = "y";
+  pc2Ros.fields[1].offset = 4;
+  pc2Ros.fields[1].datatype = 7;
+  pc2Ros.fields[1].count = 1;
+  pc2Ros.fields[2].name = "z";
+  pc2Ros.fields[2].offset = 8;
+  pc2Ros.fields[2].datatype = 7;
+  pc2Ros.fields[2].count = 1;
+  pc2Ros.fields[3].name = "rgb";
+  pc2Ros.fields[3].offset = 16;
+  pc2Ros.fields[3].datatype = 7;
+  pc2Ros.fields[3].count = 1;
 
-  rosPC_data.fields[2].name = "z";
-  rosPC_data.fields[2].offset = 8;   // offset in bytes from start of each point
-  rosPC_data.fields[2].datatype = 7; // 7 = FLOAT32
-  rosPC_data.fields[2].count = 1;    // how many FLOAT32 used for 'z'
+  std::vector<unsigned char> vec(yarpCloud.getRawData(), yarpCloud.getRawData() + yarpCloud.dataSizeBytes());
+  pc2Ros.data = vec;
+  pc2Ros.width = yarpCloud.width() * yarpCloud.height();
+  pc2Ros.height = 1;
+  pc2Ros.is_dense = yarpCloud.isDense();
 
-  rosPC_data.fields[3].name = "rgb";
-  rosPC_data.fields[3].offset = 16;
-  rosPC_data.fields[3].datatype = 7;
-  rosPC_data.fields[3].count = 1;
+  pc2Ros.point_step = sizeof(yarp::sig::DataXYZRGBA);
+  pc2Ros.row_step = static_cast<std::uint32_t>(sizeof(yarp::sig::DataXYZRGBA) * pc2Ros.width);
+  PointCloudTopic->publish(pc2Ros);
 
-#if defined(YARP_BIG_ENDIAN)
-  rosPC_data.is_bigendian = true;
-#elif defined(YARP_LITTLE_ENDIAN)
-  rosPC_data.is_bigendian = false;
-#else
-#error "Cannot detect endianness"
-#endif
+  //   yarp::rosmsg::sensor_msgs::PointCloud2 rosPC_data;
+  //   static int counter = 0;
+  //   rosPC_data.header.stamp.nsec = 0;
+  //   rosPC_data.header.stamp.sec = 0;
+  //   rosPC_data.header.seq = counter++;
+  //   rosPC_data.header.frame_id = frame_id;
 
-#if 0
-    rosPC_data.height=1;
-    rosPC_data.width=pc.size();
-#else
-  rosPC_data.height = pc.height();
-  rosPC_data.width = pc.width();
-#endif
+  //   rosPC_data.fields.resize(4);
+  //   rosPC_data.fields[0].name = "x";
+  //   rosPC_data.fields[0].offset = 0;   // offset in bytes from start of each point
+  //   rosPC_data.fields[0].datatype = 7; // 7 = FLOAT32
+  //   rosPC_data.fields[0].count = 1;    // how many FLOAT32 used for 'x'
 
-  rosPC_data.point_step = sizeof(yarp::sig::DataXYZRGBA);
-  std::vector<unsigned char> vec(pc.getRawData(), pc.getRawData() + pc.dataSizeBytes());
-  rosPC_data.data = vec;
-  rosPC_data.width = pc.width() * pc.height();
-  rosPC_data.height = 1;
-  rosPC_data.is_dense = pc.isDense(); // what this field actually means?? When is it false??
-  rosPC_data.point_step = sizeof(yarp::sig::DataXYZRGBA);
-  rosPC_data.row_step = static_cast<std::uint32_t>(sizeof(yarp::sig::DataXYZRGBA) * rosPC_data.width);
+  //   rosPC_data.fields[1].name = "y";
+  //   rosPC_data.fields[1].offset = 4;   // offset in bytes from start of each point
+  //   rosPC_data.fields[1].datatype = 7; // 7 = FLOAT32
+  //   rosPC_data.fields[1].count = 1;    // how many FLOAT32 used for 'y'
 
-  // yCDebug(LASER_FROM_POINTCLOUD)<<elem <<yelem;
-  yInfo("Publish...\n");
-  PointCloudTopic.write(rosPC_data);
+  //   rosPC_data.fields[2].name = "z";
+  //   rosPC_data.fields[2].offset = 8;   // offset in bytes from start of each point
+  //   rosPC_data.fields[2].datatype = 7; // 7 = FLOAT32
+  //   rosPC_data.fields[2].count = 1;    // how many FLOAT32 used for 'z'
+
+  //   rosPC_data.fields[3].name = "rgb";
+  //   rosPC_data.fields[3].offset = 16;
+  //   rosPC_data.fields[3].datatype = 7;
+  //   rosPC_data.fields[3].count = 1;
+
+  // #if defined(YARP_BIG_ENDIAN)
+  //   rosPC_data.is_bigendian = true;
+  // #elif defined(YARP_LITTLE_ENDIAN)
+  //   rosPC_data.is_bigendian = false;
+  // #else
+  // #error "Cannot detect endianness"
+  // #endif
+
+  // #if 0
+  //     rosPC_data.height=1;
+  //     rosPC_data.width=pc.size();
+  // #else
+  //   rosPC_data.height = pc.height();
+  //   rosPC_data.width = pc.width();
+  // #endif
+
+  //   rosPC_data.point_step = sizeof(yarp::sig::DataXYZRGBA);
+  //   std::vector<unsigned char> vec(pc.getRawData(), pc.getRawData() + pc.dataSizeBytes());
+  //   rosPC_data.data = vec;
+  //   rosPC_data.width = pc.width() * pc.height();
+  //   rosPC_data.height = 1;
+  //   rosPC_data.is_dense = pc.isDense(); // what this field actually means?? When is it false??
+  //   rosPC_data.point_step = sizeof(yarp::sig::DataXYZRGBA);
+  //   rosPC_data.row_step = static_cast<std::uint32_t>(sizeof(yarp::sig::DataXYZRGBA) * rosPC_data.width);
+
+  //   // yCDebug(LASER_FROM_POINTCLOUD)<<elem <<yelem;
+  //   yInfo("Publish...\n");
+  //   PointCloudTopic.write(rosPC_data);
 }
 
 bool GetGraspingPoses::removeHorizontalSurfaceFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &wholePointCloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &withoutHorizontalSurfacePointCloud)
@@ -1416,9 +1500,10 @@ void GetGraspingPoses::computeGraspingPoses(const std::vector<SuperqModel::Super
 
           KDL::Vector axesz(0, 0, 1);
           float angle = atan2((unitz * axesz).Norm(), dot(unitz, axesz));
-          // printf("angle: %f\n", angle * M_1_PI / 180.0);
-          if (abs(angle) > 10 * M_1_PI / 180.0)
+          printf("angle: %f\n", angle * 180.0 / M_PI);
+          if (abs(angle) > 0 * M_PI / 180.0)
           {
+            printf("We add a grasping pose\n");
             tcpX = roboticslab::KdlVectorConverter::frameToVector(frame_grasping_wrt_world);
             // printf("%f %f %f %f %f %f\n", tcpX[0], tcpX[1], tcpX[2], tcpX[3], tcpX[4], tcpX[5]);
             graspingPoses.push_back(tcpX);
@@ -1450,10 +1535,11 @@ void GetGraspingPoses::computeGraspingPoses(const std::vector<SuperqModel::Super
 
           KDL::Vector axesz(0, 0, 1);
           float angle = atan2((unitz * axesz).Norm(), dot(unitz, axesz));
-          // printf("angle: %f\n", angle * M_1_PI / 180.0);
+          printf("angle: %f\n", angle * 180.0 / M_PI);
 
-          if (abs(angle) > 10 * M_1_PI / 180.0)
+          if (abs(angle) > 0 * M_PI / 180.0)
           {
+            printf("We add a grasping pose\n");
             tcpX = roboticslab::KdlVectorConverter::frameToVector(frame_grasping_wrt_world);
             // printf("%f %f %f %f %f %f\n", tcpX[0], tcpX[1], tcpX[2], tcpX[3], tcpX[4], tcpX[5]);
             graspingPoses.push_back(tcpX);
@@ -1461,6 +1547,7 @@ void GetGraspingPoses::computeGraspingPoses(const std::vector<SuperqModel::Super
         }
       }
     }
+  
   }
 
   if (2 * params[1] <= MAX_OBJECT_WIDTH_GRASP)
@@ -1528,10 +1615,11 @@ void GetGraspingPoses::computeGraspingPoses(const std::vector<SuperqModel::Super
 
           KDL::Vector axesz(0, 0, 1);
           float angle = atan2((unitz * axesz).Norm(), dot(unitz, axesz));
-          // printf("angle: %f\n", angle * M_1_PI / 180.0);
+          printf("angle: %f\n", angle * 180.0 / M_PI);
 
-          if (abs(angle) > 10 * M_1_PI / 180.0)
+          if (abs(angle) > 0 * M_PI / 180.0)
           {
+            printf("We add a grasping pose\n");
             tcpX = roboticslab::KdlVectorConverter::frameToVector(frame_grasping_wrt_world);
             // printf("%f %f %f %f %f %f\n", tcpX[0], tcpX[1], tcpX[2], tcpX[3], tcpX[4], tcpX[5]);
             graspingPoses.push_back(tcpX);
@@ -1579,13 +1667,12 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
   transform.block<3, 3>(0, 0) = rotationMatrix;
   pcl::transformPointCloud(*bbox3d, *bbox3d, transform);
 
-  yarp::rosmsg::visualization_msgs::Marker marker;
-  yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+  visualization_msgs::msg::Marker marker;
+  visualization_msgs::msg::MarkerArray markerArray;
 
   marker.header.frame_id = "waist";
   static int counter = 0;
-  marker.header.stamp.nsec = 0;
-  marker.header.stamp.sec = 0;
+  marker.header.stamp = rclcpp::Clock().now();
 
   // marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
   // markerArray.markers.push_back(marker);
@@ -1596,12 +1683,10 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
   //     bbox3d_topic->write(markerArray);
   // }
 
-  marker.type = yarp::rosmsg::visualization_msgs::Marker::LINE_LIST;
-  marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
+  marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+  marker.action = visualization_msgs::msg::Marker::ADD;
   marker.header.frame_id = "waist";
-  marker.header.stamp.nsec = 0;
-  marker.header.stamp.sec = 0;
-  marker.header.seq = 0;
+  marker.header.stamp = rclcpp::Clock().now();
 
   yInfo() << "Bbox has " << bbox3d->points.size() << "points";
   for (int idx = 0; idx <= bbox3d->points.size() - 1; idx += 1)
@@ -1610,7 +1695,7 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
     {
       // marker.id = idx;
       yInfo() << "Line " << idx << " and " << idx + 1;
-      yarp::rosmsg::geometry_msgs::Point pointRos;
+      geometry_msgs::msg::Point pointRos;
       pointRos.x = bbox3d->points[idx].x;
       pointRos.y = bbox3d->points[idx].y;
       pointRos.z = bbox3d->points[idx].z;
@@ -1625,7 +1710,7 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
     }
     if (idx <= 1 || ((idx >= 4) && (idx < 6)))
     {
-      yarp::rosmsg::geometry_msgs::Point pointRos;
+      geometry_msgs::msg::Point pointRos;
       pointRos.x = bbox3d->points[idx].x;
       pointRos.y = bbox3d->points[idx].y;
       pointRos.z = bbox3d->points[idx].z;
@@ -1640,7 +1725,7 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
     }
     if (idx <= 3)
     {
-      yarp::rosmsg::geometry_msgs::Point pointRos;
+      geometry_msgs::msg::Point pointRos;
 
       pointRos.x = bbox3d->points[idx].x;
       pointRos.y = bbox3d->points[idx].y;
@@ -1662,10 +1747,10 @@ bool GetGraspingPoses::createBoundingBox2DFromSuperquadric(const std::vector<Sup
   marker.color.b = 1.0;
   markerArray.markers.push_back(marker);
 
-  if (bbox3d_topic)
+  if (bbox3d_outTopic)
   {
     yInfo("Publish...\n");
-    bbox3d_topic->write(markerArray);
+    // bbox3d_outTopic->publish(markerArray);
   }
 
   Eigen::Matrix4f transform_world_to_camera;
@@ -2366,22 +2451,21 @@ bool GetGraspingPoses::read(yarp::os::ConnectionReader &connection)
   case VOCAB_CMD_GET_SUPERQUADRICS_BBOXES:
   {
     mtx.lock();
-    yarp::rosmsg::visualization_msgs::Marker marker;
-    yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+    visualization_msgs::msg::Marker marker;
+    visualization_msgs::msg::MarkerArray markerArray;
 
     marker.header.frame_id = "waist";
     static int counter = 0;
-    marker.header.stamp.nsec = 0;
-    marker.header.stamp.sec = 0;
+    marker.header.stamp = rclcpp::Clock().now();
 
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
+    marker.action = visualization_msgs::msg::Marker::DELETEALL;
     marker.points.clear();
     markerArray.markers.push_back(marker);
 
-    if (bbox3d_topic)
+    if (bbox3d_outTopic)
     {
       yInfo("Publish...\n");
-      bbox3d_topic->write(markerArray);
+      bbox3d_outTopic->publish(markerArray);
     }
 
     for (unsigned int i = 0; i < m_superquadric_objects.size(); i++)
@@ -3164,21 +3248,23 @@ void GetGraspingPoses::getMinimumBoundingBoxPointCLoud(pcl::PointCloud<pcl::Poin
 
 void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const std::vector<std::vector<double>> &graspingPoses)
 {
-  yarp::rosmsg::visualization_msgs::Marker marker;
-  yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+  // yarp::rosmsg::visualization_msgs::Marker marker;
+  // yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+
+  visualization_msgs::msg::MarkerArray markerArray;
+  visualization_msgs::msg::Marker marker;
 
   marker.header.frame_id = frame_id;
   static int counter = 0;
-  marker.header.stamp.nsec = 0;
-  marker.header.stamp.sec = 0;
+  marker.header.stamp = rclcpp::Clock().now();
 
-  marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
+  marker.action = visualization_msgs::msg::Marker::DELETEALL;
   markerArray.markers.push_back(marker);
 
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
   for (int idx = 0; idx < graspingPoses.size(); idx++)
   {
@@ -3195,8 +3281,7 @@ void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const s
 
     marker.header.frame_id = frame_id;
     static int counter = 0;
-    marker.header.stamp.nsec = 0;
-    marker.header.stamp.sec = 0;
+    marker.header.stamp = rclcpp::Clock().now();
 
     // marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
     // markerArray.markers.push_back(marker);
@@ -3209,11 +3294,10 @@ void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const s
 
     float lengthArrow = 0.1;
     KDL::Vector auxV1 = unitz * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = idx;
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    yarp::rosmsg::geometry_msgs::Point pointRos;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    geometry_msgs::msg::Point pointRos;
     pointRos.x = frame.p[0] - auxV1[0];
     pointRos.y = frame.p[1] - auxV1[1];
     pointRos.z = frame.p[2] - auxV1[2];
@@ -3234,10 +3318,9 @@ void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const s
     markerArray.markers.push_back(marker);
 
     auxV1 = unitx * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = idx + graspingPoses.size();
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
     pointRos.x = frame.p[0] - auxV1[0];
     pointRos.y = frame.p[1] - auxV1[1];
     pointRos.z = frame.p[2] - auxV1[2];
@@ -3258,10 +3341,9 @@ void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const s
     markerArray.markers.push_back(marker);
 
     auxV1 = unity * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = idx + graspingPoses.size() * 2;
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
     pointRos.x = frame.p[0] - auxV1[0];
     pointRos.y = frame.p[1] - auxV1[1];
     pointRos.z = frame.p[2] - auxV1[2];
@@ -3284,28 +3366,27 @@ void GetGraspingPoses::rosSendGraspingPoses(const std::string &frame_id, const s
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
 }
 
 void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &frame_id, std::vector<pcl::PointXYZRGBA> &centroids, std::vector<KDL::Vector> &xaxis, std::vector<KDL::Vector> &yaxis, std::vector<KDL::Vector> &normals)
 {
 
-  yarp::rosmsg::visualization_msgs::Marker marker;
-  yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+  visualization_msgs::msg::Marker marker;
+  visualization_msgs::msg::MarkerArray markerArray;
 
   marker.header.frame_id = frame_id;
   static int counter = 0;
-  marker.header.stamp.nsec = 0;
-  marker.header.stamp.sec = 0;
+  marker.header.stamp = rclcpp::Clock().now();
 
-  marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
+  marker.action = visualization_msgs::msg::Marker::DELETEALL;
   markerArray.markers.push_back(marker);
 
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
 
   for (int i = 0; i < centroids.size(); i++)
@@ -3313,11 +3394,10 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
     // printf("Normals %d: %f %f %f\n", i, normals[0], normals[1], normals[2]);
     float lengthArrow = 0.1;
     KDL::Vector auxV1 = normals[i] * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = i;
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    yarp::rosmsg::geometry_msgs::Point pointRos;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    geometry_msgs::msg::Point pointRos;
     pointRos.x = centroids[i].x - auxV1[0];
     pointRos.y = centroids[i].y - auxV1[1];
     pointRos.z = centroids[i].z - auxV1[2];
@@ -3343,11 +3423,10 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
     // printf("Normals %d: %f %f %f\n", i, normals[0], normals[1], normals[2]);
     float lengthArrow = 0.1;
     KDL::Vector auxV1 = xaxis[i] * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = i + centroids.size();
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    yarp::rosmsg::geometry_msgs::Point pointRos;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    geometry_msgs::msg::Point pointRos;
     pointRos.x = centroids[i].x - auxV1[0];
     pointRos.y = centroids[i].y - auxV1[1];
     pointRos.z = centroids[i].z - auxV1[2];
@@ -3373,11 +3452,10 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
     // printf("Normals %d: %f %f %f\n", i, normals[0], normals[1], normals[2]);
     float lengthArrow = 0.1;
     KDL::Vector auxV1 = yaxis[i] * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = i + centroids.size() * 2;
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    yarp::rosmsg::geometry_msgs::Point pointRos;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    geometry_msgs::msg::Point pointRos;
     pointRos.x = centroids[i].x - auxV1[0];
     pointRos.y = centroids[i].y - auxV1[1];
     pointRos.z = centroids[i].z - auxV1[2];
@@ -3401,27 +3479,26 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
 }
 
 void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &frame_id, std::vector<pcl::PointXYZRGBA> &centroids, std::vector<KDL::Vector> &normals)
 {
-  yarp::rosmsg::visualization_msgs::Marker marker;
-  yarp::rosmsg::visualization_msgs::MarkerArray markerArray;
+  visualization_msgs::msg::Marker marker;
+  visualization_msgs::msg::MarkerArray markerArray;
 
   marker.header.frame_id = frame_id;
   static int counter = 0;
-  marker.header.stamp.nsec = 0;
-  marker.header.stamp.sec = 0;
+  marker.header.stamp = rclcpp::Clock().now();
 
-  marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
+  marker.action = visualization_msgs::msg::Marker::DELETEALL;
   markerArray.markers.push_back(marker);
 
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
 
   for (int i = 0; i < centroids.size(); i++)
@@ -3429,11 +3506,10 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
     // printf("Normals %d: %f %f %f\n", i, normals[0], normals[1], normals[2]);
     float lengthArrow = 0.1;
     KDL::Vector auxV1 = normals[i] * lengthArrow;
-    marker.header.seq = counter++;
     marker.id = i;
-    marker.type = yarp::rosmsg::visualization_msgs::Marker::ARROW;
-    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    yarp::rosmsg::geometry_msgs::Point pointRos;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    geometry_msgs::msg::Point pointRos;
     pointRos.x = centroids[i].x - auxV1[0];
     pointRos.y = centroids[i].y - auxV1[1];
     pointRos.z = centroids[i].z - auxV1[2];
@@ -3458,6 +3534,6 @@ void GetGraspingPoses::rosComputeGraspingPosesArrowAndSend(const std::string &fr
   if (graspingPoses_outTopic)
   {
     yInfo("Publish...\n");
-    graspingPoses_outTopic->write(markerArray);
+    graspingPoses_outTopic->publish(markerArray);
   }
 }

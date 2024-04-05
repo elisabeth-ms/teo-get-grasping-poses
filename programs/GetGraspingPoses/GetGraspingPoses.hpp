@@ -63,6 +63,14 @@
 #include <deque>
 #include <SuperquadricLibVis/visRenderer.h>
 
+// ROS2
+#include <yarp/sig/PointCloudUtils.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <geometry_msgs/msg/point.hpp>
+
 
 #define DEFAULT_CROP_SELECTOR 0 // 1=true
 #define DEFAULT_RGBD_DEVICE "RGBDSensorClient"
@@ -74,12 +82,12 @@
 #define DEFAULT_MIN_NPOINTS 100
 #define DEFAULT_MIN_POINTS_TABLE 150
 #define MAX_OBJECT_WIDTH_GRASP 0.16
-#define DEFAULT_HEAD_JOINT_POSITION -32.0
+#define DEFAULT_HEAD_JOINT_POSITION -45
 #define DEFAULT_EPS_ANGLE_REMOVE_TABLE 0.06
 #define DEFAULT_DISTANCE_THRESHOLD_REMOVE_TABLE 0.04
-#define DEFAULT_TABLE_HEIGHT_WRT_TRUNK 0.1
+#define DEFAULT_TABLE_HEIGHT_WRT_TRUNK 0.02
 
-constexpr auto DEFAULT_ROBOT = "/teoSim"; // /teo or /teoSim
+constexpr auto DEFAULT_ROBOT = "/teo"; // /teo or /teoSim
 namespace sharon
 {
     struct LabelRGB
@@ -163,21 +171,34 @@ namespace sharon
         yarp::os::Port mUpdateDataPort;
 
         // For publishing the transformed point cloud in ROS. Just for visualization in rviz.
-        yarp::os::Node *rosNode;
-        yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloud_outTopic;
+        // yarp::os::Node *rosNode;
+        // yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloud_outTopic;
         yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloudWithoutPlannarSurfaceTopic;
         yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloud_objectTopic;
-        yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloudLccpTopic;
-        yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloudFillingObjectsTopic;
-        yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray> *bbox3d_topic;
+        // yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloudLccpTopic;
+        // yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> *pointCloudFillingObjectsTopic;
+        // yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray> *bbox3d_topic;
 
-        yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray> *graspingPoses_outTopic;
+
+
+        // yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray> *graspingPoses_outTopic;
+
+
+        // For publishing the transformed point cloud in ROS2. Just for visualization in rviz.
+
+        rclcpp::Node::SharedPtr rosNode;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloud_outTopic;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudLccpTopic;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudFillingObjectsTopic;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr graspingPoses_outTopic;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr bbox3d_outTopic;
+
         std::string robot;
         std::string strRGBDRemote;
 
         int rateMs;
         void rosComputeGraspingPosesArrowAndSend(const std::string &frame_id, std::vector<pcl::PointXYZRGBA> &centroids, std::vector<KDL::Vector> &normals);
-        void rosComputeAndSendPc(const yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> &pc, std::string frame_id, const yarp::os::Publisher<yarp::rosmsg::sensor_msgs::PointCloud2> &PointCloudTopic);
+        void rosComputeAndSendPc(const yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> &pc, std::string frame_id, rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr PointCloudTopic);
         bool transformPointCloud(const yarp::sig::PointCloud<yarp::sig::DataXYZRGBA> &pc, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &transformed_cloud, bool from_camera_to_trunk);
         Eigen::Matrix4f KDLToEigenMatrix(const KDL::Frame &p);
         

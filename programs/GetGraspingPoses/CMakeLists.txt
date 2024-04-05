@@ -11,9 +11,16 @@ find_package(orocos_kdl 1.4)
 find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
 find_package(SuperquadricLib 0.1.0.0 EXACT REQUIRED)
 find_package(Eigen3 QUIET CONFIG)
+
 if(NOT EIGEN3_FOUND)
     find_package(Eigen3 REQUIRED)
 endif()
+
+find_package(rclcpp REQUIRED) # ROS2
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
 # Retrieve a list of targets defined elsewhere.
 get_property(_exported_targets GLOBAL PROPERTY TEO_SHARON_TARGETS)
 if(!PCL_FOUND)
@@ -46,13 +53,17 @@ add_executable(${KEYWORD} main.cpp
 target_link_libraries(${KEYWORD} YARP::YARP_OS
                                  YARP::YARP_init
                                  YARP::YARP_dev
-         			 ${orocos_kdl_LIBRARIES}
+         			                   ${orocos_kdl_LIBRARIES}
                                  ROBOTICSLAB::KdlVectorConverterLib
                                  ROBOTICSLAB::KinematicRepresentationLib
                                  ${OpenCV_LIBRARIES}
                                  ${PCL_LIBRARIES}
                                  SuperquadricLib::SuperquadricLibModel
                                  SuperquadricLib::SuperquadricLibVis
+                                 rclcpp::rclcpp
+                                 sensor_msgs::sensor_msgs__rosidl_typesupport_cpp
+                                 visualization_msgs::visualization_msgs__rosidl_typesupport_cpp
+                                 geometry_msgs::geometry_msgs__rosidl_typesupport_cpp
                                  ${_exported_targets})
 
 target_include_directories(${KEYWORD} PRIVATE ${orocos_kdl_INCLUDE_DIRS})                                 
